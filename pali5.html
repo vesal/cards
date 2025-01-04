@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <title>Palindromi</title>
+    <script>
+        if (window.self === window.top) {  //  lokaali ajo
+            window.jsframedata = { params: {
+                inputChars: 8,
+                minChars: 6,
+                labelText: 'Anna palindromi, jossa vähintään ${count} kirjainta:'
+            } };
+            document.addEventListener('DOMContentLoaded', () => {
+                onInit();
+                setData({ c: { text: 'kissa' } });
+            } );
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+<p>
+    <label id="label" for="word">Anna sana:</label>
+    <input id="word" type="text" name="word">
+    <span id="icon"></span>
+</p>
+</div>
+<script>
+function onInit() {
+    const container = document.getElementById('container');
+    window.pali = new Pali(container, window.jsframedata);
+}
+
+
+function setData(data) {
+    if (!window.pali) onInit();  // varulta
+    window.pali.setData(data);
+}
+
+
+function saveData(data) {
+  window.port2.postMessage({ msg: "datasave", data: {  ...data } });
+}
+
+
+function getData() {
+    return  { c: { text: `${window.hullu.counterLeft.value};${window.hullu.counter.value}` } };
+}
+
+
+function updateData(data) {
+      window.port2.postMessage({ msg: "update", data: {  ...data } });
+}
+
+
+class Pali {
+    constructor(container, data) {
+        this.settings = {
+            inputChars: 10, // input alueen leveys
+            minChars: 0, // sanassa tarvittavien merkkien minimimäärä
+            labelText: "Anna sana:", // labelin teksti
+        }
+        if (data) Object.assign(this.settings, data.params);
+        this.container = container;
+        this.createContent();
+    }
+    createContent() {
+        const s = this.settings;
+        this.input = this.container.querySelector("#word");
+        this.icon = this.container.querySelector("#icon");
+        const label = this.container.querySelector("#label");
+        label.textContent = s.labelText.replace('${count}', s.minChars);
+
+        this.input.style.width = s.inputChars + 'ch';
+        this.input.addEventListener('input', () => this.checkPalindrome());
+    }
+
+    checkPalindrome() {
+        const word = this.input.value;
+        let isPalindrome = true;
+        for (let i = 0, j = word.length - 1; i < j; i++, j--) {
+            if (word[i] !== word[j]) {
+                isPalindrome = false;
+                break;
+            }
+        }
+        if (isPalindrome && this.settings.minChars <= word.length) {
+            this.icon.textContent = '✔';
+            this.icon.style.color = 'green';
+        } else {
+            this.icon.textContent = '✘';
+            this.icon.style.color = 'red';
+        }
+        updateData(getData());
+    }
+
+    getData() {
+        return { c: { text: this.input.value } };
+    }
+
+    setData(data) {
+        this.input.value = data.c.text;
+        this.checkPalindrome();
+    }
+}
+</script>
+</body>
+</html>

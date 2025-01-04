@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <title>Palindromi</title>
+</head>
+<body>
+<div id="container">
+    <label id="label" for="word">Anna sana:</label>
+    <input id="word" type="text" name="word">
+    <span id="icon"></span>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('container');
+    new Pali(container);
+});
+
+class Pali {
+    constructor(container) {
+        this.settings = {
+            inputChars: 10, // input alueen leveys
+            minChars: 0, // sanassa tarvittavien merkkien minimimäärä
+            labelText: "Anna sana:", // labelin teksti
+        }
+        this.container = container;
+        this.createContent();
+    }
+    createContent() {
+        const s = this.settings;
+        this.input = this.container.querySelector("#word");
+        this.icon = this.container.querySelector("#icon");
+        const label = this.container.querySelector("#label");
+        label.textContent = s.labelText.replace('${count}', s.minChars);
+
+        this.input.style.width = s.inputChars + 'ch';
+        this.input.addEventListener('input', () => this.checkPalindrome());
+    }
+
+    checkPalindrome() {
+        const word = this.input.value;
+        let isPalindrome = true;
+        for (let i = 0, j = word.length - 1; i < j; i++, j--) {
+            if (word[i] !== word[j]) {
+                isPalindrome = false;
+                break;
+            }
+        }
+        if (isPalindrome && this.settings.minChars <= word.length) {
+            this.icon.textContent = '✔';
+            this.icon.style.color = 'green';
+        } else {
+            this.icon.textContent = '✘';
+            this.icon.style.color = 'red';
+        }
+    }
+}
+</script>
+</body>
+</html>

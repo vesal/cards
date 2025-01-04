@@ -41,9 +41,9 @@ class Pali {
     }
     createContent() {
         const s = this.settings;
-        this.input = document.getElementById("word");
-        this.icon = document.getElementById("icon");
-        const label = document.getElementById("label");
+        this.input = this.container.querySelector("#word");
+        this.icon = this.container.querySelector("#icon");
+        const label = this.container.querySelector("#label");
         label.textContent = s.labelText.replace('${count}', s.minChars);
 
         this.input.style.width = s.inputChars + 'ch';
