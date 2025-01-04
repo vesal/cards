@@ -19,11 +19,9 @@
 </head>
 <body>
 <div id="container">
-<p>
     <label id="label" for="word">Anna sana:</label>
     <input id="word" type="text" name="word">
     <span id="icon"></span>
-</p>
 </div>
 <script>
 function onInit() {
@@ -44,7 +42,7 @@ function saveData(data) {
 
 
 function getData() {
-    return  { c: { text: `${window.hullu.counterLeft.value};${window.hullu.counter.value}` } };
+    return window.pali.getData();
 }
 
 
