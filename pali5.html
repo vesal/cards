@@ -71,6 +71,11 @@ class Pali {
 
         this.input.style.width = s.inputChars + 'ch';
         this.input.addEventListener('input', () => this.checkPalindrome());
+        this.input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                saveData(this.getData());
+            }
+        });
     }
 
     checkPalindrome() {
