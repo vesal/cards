@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Napoleon</title>
+    <script>
+         let ver = Math.random(); // laita tuotannossa vakioksi
+         document.write('<script src="cards.js?v=' + ver + '"><\/script>');
+         document.write('<script src="napoleon.js?v=' + ver + '"><\/script>');
+         window.jsframedata = { params: {
+                bgIndex: 2,
+                newGameText: "Uusi",
+         }};
+         document.addEventListener('DOMContentLoaded', () => onInit() );
+    </script>
+</head>
+<body>
+    <div id="game"></div>
+</body>
+</html>

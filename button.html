@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div class="game"></div>
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    const peli = document.querySelector('.game');
+    const button = document.createElement('button');
+    button.style.position = "absolute";
+    button.style.left = `10px`;
+    button.style.top = `10px`;
+    button.style.width = `50px`;
+    button.style.height = `50px`;
+    button.innerHTML = '&#8678;';
+    button.style.fontSize = "40px";
+    peli.appendChild(button);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Deck Component</title>
+    <link rel="stylesheet" href="cards.css">
+    <style>
+.button.eka {
+    padding: 0;
+    width: 50px;
+    /*border: 1px solid #000;*/
+    -webkit-border-radius: 5px;
+}
+    </style>
+    <script>
+         document.write('<script src="cards.js?v=' + Math.random() + '"><\/script>');
+    </script>
+</head>
+<body>
+    <div class="game"></div>
+    <div id="debug" style="top: 500px"></div>
+    <button id="debugResetButton">Reset</button>
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    const peli = document.querySelector('.game');
+    peli.style.position = "absolute";
+    peli.style.left = "100px"
+    const poyta = new Table("poyta", true);
+    poyta.element.style.width = '500px';
+    poyta.element.style.height = '340px';
+    poyta.dx = 100;
+    poyta.mx = 20;
+    poyta.my = 20;
+    peli.appendChild(poyta.element);
+    const jakoPakka = new DealDeck('jakoPakka');
+    // jakoPakka.shuffle();
+    poyta.addDeck(jakoPakka);
+    const pakka1 = new Deck('pakka1');
+    poyta.addDeck(pakka1);
+    const pakka2 = new Deck('pakka2');
+    poyta.addDeck(pakka2);
+    const pakka3 = new Deck('pakka3');
+    poyta.addDeck(pakka3);
+    pakka3.element.style.height = '300px';
+    pakka3.dy = 20;
+    jakoPakka.tapHandler = (_deck, _card) => {
+        const card = jakoPakka.pop();
+        if (card) {
+            pakka1.animateAddCard(card);
+        }
+    };
+    // Attach event listener to the button
+    const debugResetButton = document.getElementById('debugResetButton');
+    debugResetButton.addEventListener('click', debugClear);
+});
+</script>
+</body>
+</html>

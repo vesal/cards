@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hullunpasianssi</title>
+    <script>
+        let ver = Math.random(); // laita tuotannossa vakioksi
+        document.write('<script src="cards.js?v=' + ver + '"><\/script>');
+        document.write('<script src="hullu.js?v=' + ver + '"><\/script>');
+        window.jsframedata = { params: {
+            imagePath: '/common/images/cards',
+            bgImages: ["back2"],
+            bgIndex: 0,
+            loosingText: "Häviö",
+            showCardsLeft: true,
+            handDeckText: "Käsi",
+            newGameText: "Uusi",
+        } };
+        document.addEventListener('DOMContentLoaded', () => onInit() );
+    </script>
+</head>
+<body>
+    <div id="game"></div>
+</body>
+</html>

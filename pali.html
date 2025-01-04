@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <title>Palindromi</title>
+    <script>
+        document.write('<script src="pali.js"><\/script>');
+        window.jsframedata = { params: {
+            inputChars: 3,
+            minChars: 6,
+            labelText: 'Anna palindromi, jossa vähintään ${count} kirjainta:'
+        } };
+        document.addEventListener('DOMContentLoaded', () => onInit() );
+    </script>
+</head>
+<body>
+<div id="container"></div>
+</body>
+</html>

@@ -1,0 +1,52 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.table {
+    position: absolute;
+    font-family: Arial, sans-serif;
+    background-color: #009e00; /* Vihreä tausta */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.dealdeck {
+    position: relative;
+    width: 100px; /* Adjust as needed */
+    height: 150px; /* Adjust as needed */
+}
+
+.deck {
+    position: relative;
+    width: 73px; /* Adjust as needed */
+    height: 98px; /* Adjust as needed */
+}
+
+.card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 73px;
+    height: 98px;
+    background-color: transparent;
+    /* border: 1px solid #ccc; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    -webkit-user-drag: element;
+}
+
+.hidden {
+    display: none;
+}
+
+.dragging-card {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000;
+}
