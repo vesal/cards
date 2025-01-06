@@ -37,7 +37,7 @@ function setData(data) {
 
 
 function saveData(data) {
-  window.port2.postMessage({ msg: "datasave", data: {  ...data } });
+    window.port2.postMessage({ msg: "datasave", data: {  ...data } });
 }
 
 
@@ -47,7 +47,7 @@ function getData() {
 
 
 function updateData(data) {
-      window.port2.postMessage({ msg: "update", data: {  ...data } });
+    window.port2.postMessage({ msg: "update", data: {  ...data } });
 }
 
 
@@ -102,7 +102,9 @@ class Pali {
     }
 
     setData(data) {
-        this.input.value = data.c.text;
+        const newText = data.c.text;
+        if (this.input.value === newText) return;
+        this.input.value = newText;
         this.checkPalindrome();
     }
 }

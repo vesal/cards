@@ -1,10 +1,38 @@
 function onInit() {
-    new SortGame(document.getElementById('game'), window.jsframedata);
+     window.sortgame = new SortGame(document.getElementById('game'), window.jsframedata, window.initData);
+}
+
+
+function setData(data) {
+    if (!window.sortgame) onInit();  // varulta
+    window.sortgame.setData(data);
+}
+
+
+function saveData(data) {
+    if (window.self === window.top) {  //  lokaali ajo
+        console.log('saveData', data);
+    }
+    else
+        window.port2.postMessage({ msg: "datasave", data: {  ...data } });
+}
+
+
+function getData() {
+    return window.sortgame.getData();
+}
+
+
+function updateData(data) {
+    if (window.self === window.top) {  //  lokaali ajo
+        console.log('updateData', data);
+    }
+    else  window.port2.postMessage({ msg: "update", data: {  ...data } });
 }
 
 
 class SortGame {
-    constructor(gameElement, data) {
+    constructor(gameElement, data, initData) {
         this.settings = {
             scale: 1,                    // how to scale the game area, 0.5 = 50%
             n: 8,                        // how many cards to deal
@@ -40,8 +68,10 @@ class SortGame {
             swaps: null, // what indecies to swap in the deal deck "0-1 5-8"
                          // if starts with -, swap count indecies from the end
                          // so top of deal deck. 0 is the topmost card
+            task: false, // if false, the game is not a task, so no need to save the data
         }
         if (data) copyParamsValues(data.params, this.settings);
+        this.initData = (initData && initData.c !== undefined) ? initData : null;
         let s = this.settings;
         setNoSelect(gameElement);
         this.gameElement = gameElement;
@@ -65,17 +95,21 @@ class SortGame {
         this.dealDeck = this.createDealDeck();
         this.storage = this.createStorage();
         this.recycleBin = this.createRecycleBin();
-        this.createPointers(s.numberOfPtrs);
         this.moveCounter = this.createCounter('counter-move', 488, 280);
-        this.assignCounter = this.createCounter('counter-swap', 568, 280);
+        this.assignCounter = this.createCounter('counter-assign', 568, 280);
         this.createLabel('label1', 488, 264, s.pointingsText);
         this.createLabel('label2', 568, 264, s.assignsText);
-        this.createButton('button-piilota', 88, 211, 110, 50, s.hideText, this.buttonHideClick.bind(this));
-        this.createButton('button-nayta', 88, 211, 110, 50, s.showText, this.buttonShowClick.bind(this));
+        this.createButton('button-hide', 88, 211, 110, 50, s.hideText, this.buttonHideClick.bind(this));
+        this.createButton('button-show', 88, 211, 110, 50, s.showText, this.buttonShowClick.bind(this));
+        this.createButton('button-hide', 130, 280, 65, 30, s.newGameText, this.handleDealButtonClick.bind(this));
         this.dirArrow = this.createArrow('dirArrow', 488, 211, 62, 50, '');
         this.swapButton = this.createButton('buttonSwap', 568, 211, 62, 50, s.swapText, this.buttonSwapClick.bind(this));
-        this.createHiddenOptionsArea()
-        this.deal(s.n);
+        this.createHiddenOptionsArea();
+        if (this.initData) this.setData(this.initData);
+        else {
+            this.createPointers(s.numberOfPtrs);
+            this.deal(s.n);
+        }
         document.addEventListener('keydown', (event) => {
             const e = event;
             let key = event.key.toLowerCase();
@@ -103,8 +137,7 @@ class SortGame {
         return 0;
     }
 
-    clearTable() {
-        const s = this.settings;
+    setTablePositions() {
         this.scalableDiv.style.height = '220px';
 
         this.table.element.style.position = "absolute";
@@ -119,11 +152,12 @@ class SortGame {
         this.ptrtable.element.style.top = "110px";
     }
 
-    createTopRowDecks(n) {
+    createTopRowDecks(n, animate = true) {
         const s = this.settings;
         const startx = 8;
         const dw = 73;
         const xsep = 4;
+        this.table.removeAllDecks();
         let dx = dw + xsep;
         let x = startx;
         for (let i = 0; i <= n; i++) {  // paikka 0 on etsittävälle kortille
@@ -144,8 +178,9 @@ class SortGame {
         this.firstDeck.element.style.border = "none";
         this.firstDeck.maxCards = 0;
         this.firstDeck.onInsert = null;
-        this.createFirstCard(s.firstCard);
+        if (animate) this.createFirstCard(s.firstCard);
 
+        this.ptrtable.removeAllDecks();
         dx = dw + xsep;
         x = startx;
         for (let i = 0; i <= n + 1; i++) { // kaksi ylimääräistä
@@ -172,6 +207,8 @@ class SortGame {
         if (s.scale * x > rect.width) {
             this.gameElement.style.width = `${s.scale * x + 10}px`;
         }
+
+        if (!animate) return;
 
         setTimeout(() => {
             for (let i = 1; i < this.table.decks.length; i++) {
@@ -212,6 +249,7 @@ class SortGame {
     }
 
     removeFirstCard() {
+        if (!this.firstDeck) return;
         const firstCard = this.firstDeck.pop();
         if (firstCard) firstCard.element.remove();
     }
@@ -228,8 +266,8 @@ class SortGame {
     continueDeal(n) {
         this.dealDeck.onInsert = null;
         this.dealDeck.onFull = null;
-        this.table.removeDecks()
-        this.ptrtable.removeDecks()
+        this.table.removeAllDecks()
+        this.ptrtable.removeAllDecks()
         this.dealDeck.shuffle();
         this.dealDeck.sortDeck(this.settings.sortFirst, true);
         this.dealDeck.moveCardsToTop(this.settings.pickCards);
@@ -238,7 +276,8 @@ class SortGame {
     }
 
     deal(n) {
-        this.clearTable();
+        this.buttonHideClick();
+        this.setTablePositions();
         if (this.dealDeck.cards.length >= this.dealDeck.maxCards) {
             this.continueDeal(n);
             return;
@@ -250,6 +289,17 @@ class SortGame {
         this.table.sendCards(this.dealDeck);
         this.recycleBin.sendCards(this.dealDeck);
         this.storage.sendCards(this.dealDeck);
+        // this.createTopRowDecks(n);
+    }
+
+
+    initDecks(n) {
+        this.setTablePositions();
+        this.removeFirstCard(); // remove so that its is not flying to the dealdeck
+        this.table.moveCards(this.dealDeck);
+        this.recycleBin.moveCards(this.dealDeck);
+        this.storage.moveCards(this.dealDeck);
+        this.createTopRowDecks(n, false);
     }
 
 
@@ -338,6 +388,8 @@ class SortGame {
     }
 
     createPointers(numberOfPtrs) {
+        this.ptrtable.removeAllCards();
+
         while (this.ptrs.length > 0) {
             const ptr = this.ptrs.pop();
             ptr.element.remove();
@@ -352,15 +404,20 @@ class SortGame {
 
 
     buttonHideClick() {
-        document.querySelector('.button-piilota').style.display = 'none';
-        document.querySelector('.button-nayta').style.display = 'block';
+        document.querySelectorAll('.button-hide').forEach(element => {
+           element.style.display = 'none';
+        });
+        document.querySelector('.button-show').style.display = 'block';
         this.show(false);
     }
 
     buttonShowClick() {
-        document.querySelector('.button-piilota').style.display = 'block';
-        document.querySelector('.button-nayta').style.display = 'none';
+        document.querySelectorAll('.button-hide').forEach(element => {
+           element.style.display = 'block';
+        });
+        document.querySelector('.button-show').style.display = 'none';
         this.show(true);
+        if (this.settings.task) saveData(this.getData());
     }
 
     getPtrIndex(ptr) {
@@ -473,6 +530,7 @@ class SortGame {
         hiddenArea.style.border = '1px solid black';
         hiddenArea.style.padding = '10px';
         hiddenArea.style.zIndex = '1000';
+        this.hiddenArea = hiddenArea;
 
         function createInput(labelText, inputId, inputName, defaultValue) {
             const label = document.createElement('label');
@@ -499,11 +557,11 @@ class SortGame {
         this.dxInput = createInput(s.dxText, 'dx', 'dx', s.dx);
 
         // Create "Jaa" button
-        const jaaButton = document.createElement('button');
-        jaaButton.id = 'new-game-button';
-        jaaButton.textContent = s.newGameText;
-        jaaButton.onclick = this.handleJaaButtonClick.bind(this);
-        hiddenArea.appendChild(jaaButton);
+        const dealButton = document.createElement('button');
+        dealButton.id = 'new-game-button';
+        dealButton.textContent = s.newGameText;
+        dealButton.onclick = this.handleDealButtonClick.bind(this);
+        hiddenArea.appendChild(dealButton);
 
         // Append hidden area to the game element
         this.gameElement.appendChild(hiddenArea);
@@ -522,7 +580,7 @@ class SortGame {
     }
 
     toggleHiddenArea() {
-        const hiddenArea = document.getElementById('hidden-area');
+        const hiddenArea = this.hiddenArea;
         if (hiddenArea.style.display === 'none' || hiddenArea.style.display === '') {
             hiddenArea.style.display = 'block';
         } else {
@@ -543,14 +601,80 @@ class SortGame {
         return value;
     }
 
-    handleJaaButtonClick() {
+    handleDealButtonClick() {
         const cardCount = this.parseValue(this.cardCountInput, 8, 52);
         const pointerCount = this.parseValue(this.pointerCountInput, 3, 52);
         this.settings.dx = this.parseValue(this.dxInput, 73, 100);
-        this.buttonHideClick()
-        this.toggleHiddenArea()
+        this.buttonHideClick();
+        // this.toggleHiddenArea();
+        this.hiddenArea.style.display = 'none';
         this.createPointers(pointerCount);
         this.deal(cardCount);
+    }
+
+    setData(data) {
+        this.initData = data;
+        if (!data || !data.c) return;
+        if (areObjectsEqual(data, this.getData())) {
+            this.show(true);
+            return;
+        }
+        const cntrs = data.c.cntrs;
+        const ptrs = data.c.ptrs;
+        const cards = data.c.cards;
+        this.initDecks(cards.length);
+        let ptrn = 0;
+        let crdn = 0;
+        if (ptrs) {
+            this.createPointers(ptrs.length);
+            ptrn = ptrs.length;
+            for (let i = 0; i < ptrs.length; i++) {
+                let ptr = this.ptrs[i];
+                let index = ptrs[i];
+                if (index < 0) index = 0;
+                if (index > this.ptrtable.decks.length - 1) index = this.ptrtable.decks.length - 1;
+                this.ptrtable.decks[index].addCard(ptr);
+            }
+        }
+
+        if (cards) {
+            crdn = cards.length;
+            for (let i = 0; i < cards.length; i++) {
+                let cardId = cards[i];
+                if (cardId) this.table.decks[i + 1].addCard(this.dealDeck.getById(cardId));
+            }
+        }
+
+        if (cntrs) {
+            this.moveCounter.setValue(cntrs[0]-ptrn);
+            this.assignCounter.setValue(cntrs[1]-crdn);
+        }
+
+        this.createFirstCard(data.c.c1);
+
+        this.checkValues();
+        this.show(true);
+    }
+
+    getData() {
+        const ps = [];
+        for (let ptr of this.ptrs) ps.push(this.getPtrIndex(ptr));
+        const cs = [];
+        for (let i = 1; i < this.table.decks.length; i++) {
+            const deck = this.table.decks[i];
+            const card = deck.peek();
+            cs.push(card ? card.id : "");
+        }
+        const data = { c:
+                { cntrs: [this.moveCounter.value,this.assignCounter.value],
+                  ptrs: ps,
+                  cards: cs,
+                },
+        };
+        const firstCard = this.firstDeck ? this.firstDeck.peek() : null;
+        if (firstCard) data.c.c1 = firstCard.id;
+
+        return data;
     }
 }
 

@@ -587,6 +587,14 @@ class Deck {
         if (updateDisplay) this.updateDeckDisplay();
     }
 
+    removeAllCards() {
+        for (let card of this.cards) {
+            card.deck = null;
+            this.element.removeChild(card.element);
+        }
+        this.cards = [];
+        this.updateDeckDisplay();
+    }
 
     moveCardsToTop(pickCardsString) {
         if (!pickCardsString) return;
@@ -599,10 +607,8 @@ class Deck {
         const cardIds = pickCardsString.toLowerCase().split(/[ ,;]/).filter(Boolean);
         for (let i = cardIds.length-1; i >= 0; i--) {
             const cardId = cardIds[i];
-            const index = this.cards.findIndex(c => c.id === cardId);
-            if (index < 0) continue;
-            const card = this.cards[index];
-            this.cards.splice(index, 1);
+            const card = this.getById(cardId);
+            if (!card) continue;
             if (dir == 0) this.cards.push(card);
             else this.cards.unshift(card);
         }
@@ -640,6 +646,14 @@ class Deck {
         this.element.removeChild(topCard.element);
         topCard.deck = null;
         return topCard;
+    }
+
+    getById(cardId) {
+        const index = this.cards.findIndex(c => c.id === cardId);
+        if (index < 0) return null;
+        const card = this.cards[index];
+        this.cards.splice(index, 1);
+        return card;
     }
 
     setCenterText(text) {
@@ -702,6 +716,11 @@ class Deck {
         }
     }
 
+    moveCards(targetDeck) {
+        while (this.cards.length > 0) {
+            targetDeck.addCard(this.pop());
+        }
+    }
     sortDeck(sortFirst = 0, useSuit = false) {
         if (!sortFirst) return;
         let n = sortFirst;
@@ -839,22 +858,34 @@ class Table {
         }
     }
 
-    removeDecks() {
+    removeAllDecks() {
         while (this.decks.length > 0) {
             this.removeDeck(this.decks[this.decks.length - 1]);
         }
     }
+
+    removeAllCards() {
+        for (let deck of this.decks)
+            deck.removeAllCards();
+    }
+
 
     setVisible(visible) {
         this.visible = visible;
         for (let deck of this.decks) deck.setVisible(visible);
     }
 
-        sendCards(targetDeck) {
-            for (let deck of this.decks) {
-                deck.sendCards(targetDeck);
-            }
+    sendCards(targetDeck) {
+        for (let deck of this.decks) {
+            deck.sendCards(targetDeck);
         }
+    }
+
+    moveCards(targetDeck) {
+        for (let deck of this.decks) {
+            deck.moveCards(targetDeck);
+        }
+    }
 }
 
 
@@ -891,4 +922,27 @@ class Counter {
     inc() {
         this.setValue(this.value + 1);
     }
+}
+
+
+function areObjectsEqual(obj1, obj2) {
+    const sortedObj1 = sortObjectProperties(obj1);
+    const sortedObj2 = sortObjectProperties(obj2);
+    return JSON.stringify(sortedObj1) === JSON.stringify(sortedObj2);
+}
+
+
+function sortObjectProperties(obj) {
+    if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(sortObjectProperties);
+    }
+    const sortedKeys = Object.keys(obj).sort();
+    const result = {};
+    for (const key of sortedKeys) {
+        result[key] = sortObjectProperties(obj[key]);
+    }
+    return result;
 }

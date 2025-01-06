@@ -10,8 +10,11 @@
         document.write(`<script src="${scriptPath}cards.js?v={ver}"><\/script>`);
         document.write(`<script src="${scriptPath}sortgame.js?v={ver}"><\/script>`);
         window.jsframedata = { params: {
-            scale: 0.5,
+            scale: 1.0,
             imagePath: '/common/images/cards',
+            // n: 5,
+            // dx: 73,
+            scale: 0.6,
             n: 52,
             dx: 33,
             numberOfPtrs: 4,
@@ -21,14 +24,109 @@
             lessText: '<',
             greaterText: '>',
             equalText: '=',
-            firstCard: "rnd",
-            sortFirst: -60,
+            // firstCard: "rnd",
+            // sortFirst: -60,
             firstCardBackIndex: 5,
             // compareSuits: true,
-            pickCards: "- s02 c06 d01 h12",
+            pickCards: "s02 c06 d01 h12",
             // swaps: "3-7 9-12 34-2"
+            task: true,
             } };
-        document.addEventListener('DOMContentLoaded', () => onInit() );
+          data1 = {
+  "c": {
+    "cntrs": [
+      3,
+      5
+    ],
+    "ptrs": [
+      3,
+      2,
+      6,
+      7
+    ],
+    "cards": [
+      "s12",
+      "s02",
+      "c06",
+      "d01",
+    ],
+    "c1": "c03",
+  }
+}
+data2 = {
+    "c": {
+        "cntrs": [
+            0,
+            0
+        ],
+        "ptrs": [
+            0,
+            0,
+            53,
+            53
+        ],
+        "cards": [
+            "s02",
+            "c06",
+            "d01",
+            "h12",
+            "c05",
+            "s12",
+            "d06",
+            "h08",
+            "s04",
+            "c09",
+            "d11",
+            "c07",
+            "c08",
+            "h03",
+            "d07",
+            "s01",
+            "d04",
+            "d02",
+            "h13",
+            "d08",
+            "h07",
+            "h11",
+            "c10",
+            "s10",
+            "h02",
+            "h06",
+            "h10",
+            "h05",
+            "d03",
+            "c03",
+            "c02",
+            "s08",
+            "s09",
+            "d09",
+            "s05",
+            "d05",
+            "s07",
+            "d10",
+            "s06",
+            "s03",
+            "c12",
+            "c11",
+            "h04",
+            "d13",
+            "s13",
+            "c04",
+            "d12",
+            "c01",
+            "h09",
+            "c13",
+            "h01",
+            "s11"
+        ]
+    }
+};
+
+        window.initData = data2;
+        document.addEventListener('DOMContentLoaded', () => {
+            onInit();
+            // setData(data);
+        });
     </script>
     <style>
         body {

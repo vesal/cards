@@ -1,7 +1,29 @@
 function onInit() {
     const container = document.getElementById('container');
-    new Pali(container, window.jsframedata);
+    window.pali = new Pali(container, window.jsframedata);
 }
+
+
+function setData(data) {
+    if (!window.pali) onInit();  // varulta
+    window.pali.setData(data);
+}
+
+
+function saveData(data) {
+    window.port2.postMessage({ msg: "datasave", data: {  ...data } });
+}
+
+
+function getData() {
+    return window.pali.getData();
+}
+
+
+function updateData(data) {
+    window.port2.postMessage({ msg: "update", data: {  ...data } });
+}
+
 
 class Pali {
     constructor(container, data) {
@@ -17,29 +39,32 @@ class Pali {
 
     createContent() {
         const s = this.settings;
-        const paragraph = document.createElement('p');
 
         const label = document.createElement('label');
         label.htmlFor = 'word';
         label.textContent = label.textContent = s.labelText.replace('${count}', s.minChars);
-        paragraph.appendChild(label);
+        this.container.appendChild(label);
 
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'word';
         input.name = 'word';
         input.style.width = s.inputChars + 'ch';
-        paragraph.appendChild(input);
+        this.container.appendChild(input);
 
         const icon = document.createElement('span');
         icon.className = 'icon';
-        paragraph.appendChild(icon);
+        this.container.appendChild(icon);
 
-        this.container.appendChild(paragraph);
         this.input = input;
         this.icon = icon;
 
         this.input.addEventListener('input', () => this.checkPalindrome());
+        this.input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                saveData(this.getData());
+            }
+        });
     }
 
     checkPalindrome() {
@@ -58,5 +83,17 @@ class Pali {
             this.icon.textContent = '✘';
             this.icon.style.color = 'red';
         }
+        updateData(getData());
+    }
+
+    getData() {
+        return { c: { text: this.input.value } };
+    }
+
+    setData(data) {
+        const newText = data.c.text;
+        if (this.input.value === newText) return;
+        this.input.value = newText;
+        this.checkPalindrome();
     }
 }
