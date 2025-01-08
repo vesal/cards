@@ -27,9 +27,20 @@ function updateData(data) {
 }
 
 
+hulluTranslations = {
+    en: {
+        winningText: "- Ohoh! You won! -",   // text for winning
+        loosingText: "- Äh! You loose! -",   // text for loosing
+        newGameText: "New game",             // text for new game link
+        handDeckText: "Hand deck",           // text for hand deck
+    }
+}
+
+
 class Hullu {
     constructor(gameElement, data) {
         this.settings = {
+            lang: "fi",                          // laguage, fi, en
             winningText: "- Ohoh! Voitit! -",    // text for winning
             loosingText: "- Hähää! Hävisit! -",  // text for loosing
             newGameText: "Uusi peli",            // text for new game link
@@ -37,7 +48,11 @@ class Hullu {
             showCardsLeft: false, // if false, show the round number 1-4.
                                   // if true, show the number of cards left in the deal deck
         };
-        if (data) copyParamsValues(data.params, this.settings);
+        if (data) {
+            const lang = data.params?.lang ?? 'fi';
+            Object.assign(this.settings, hulluTranslations[lang] ?? {}, );
+            copyParamsValues(data.params, this.settings);
+        }
         this.gameElement = gameElement;
         this.createLayout();
     }

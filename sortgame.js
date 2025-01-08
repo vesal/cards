@@ -1,5 +1,6 @@
 function onInit() {
-     window.sortgame = new SortGame(document.getElementById('game'), window.jsframedata, window.initData);
+    if (window.sortgame) return;
+    window.sortgame = new SortGame(document.getElementById('game'), window.jsframedata, window.initData);
 }
 
 
@@ -30,10 +31,31 @@ function updateData(data) {
     else  window.port2.postMessage({ msg: "update", data: {  ...data } });
 }
 
+sortGameTranslations = {
+    en: {
+        showText: 'Show',                 // text for show button
+        hideText: 'Hide',                 // text for hide button
+        storageText: 'Storage',           // text for storage deck
+        recycleBinText: 'Trash',          // text for recycle bin deck
+        swapText: 'Swap',                 // text for swap button
+        pointingsText: 'Pointings',       // text for pointer moves
+        assignsText: 'Assignments',       // text for assign moves
+        optionsText: 'Options',           // text for options link
+        cardsText: 'Cards:',              // text for card count in options
+        pointersText: 'Pointers:',        // text for pointer count in options
+        dxText: 'dx:',                    // text for dx in options
+        newGameText: 'Deal',              // text for new game button in options
+        lessTitle: 'left is smaller',     // title for less than arrow
+        greaterTitle: 'right is smaller', // title for greater than arrow
+        equalTitle: 'equals',             // title for equal arrow
+    },
+}
+
 
 class SortGame {
     constructor(gameElement, data, initData) {
         this.settings = {
+            lang: "fi",                  // laguage, fi, en
             scale: 1,                    // how to scale the game area, 0.5 = 50%
             n: 8,                        // how many cards to deal
             dx: 73 + 2,                  // how much to move the decks
@@ -50,15 +72,15 @@ class SortGame {
             pointersText: 'Osoittimia:', // text for pointer count in options
             dxText: 'dx:',               // text for dx in options
             newGameText: 'Jaa',          // text for new game button in options
+            lessTitle: 'vasemmalla pienempi ', // title for less than arrow
+            greaterTitle: 'oikealla pienempi', // title for greater than arrow
+            equalTitle: 'yhtäsuuria',    // title for equal arrow
             ptrLessText: '<',            // text for less under the pointer
             ptrGreaterText: '>',         // text for greater under the pointer
             ptrEqualText: '=',           // text for equal under the pointer
             lessText: '&#8678;',         // text for less than arrow
             greaterText: '&#8680;',      // text for greater than arrow
             equalText: '==',             // text for equal arrow
-            lessTitle: 'vasemmalla pienempi;', // title for less than arrow
-            greaterTitle: 'oikealla pienempi;', // title for greater than arrow
-            equalTitle: 'yhtäsuuria;',   // title for equal arrow
             firstCard: null,       // card name for the left most card, like s04, rnd = random card
             firstCardBackIndex: 0, // back image index for the first card
             sortFirst: 0, // how many first cards to sort in deal deck before dealing
@@ -70,7 +92,13 @@ class SortGame {
                          // so top of deal deck. 0 is the topmost card
             task: false, // if false, the game is not a task, so no need to save the data
         }
-        if (data) copyParamsValues(data.params, this.settings);
+        if (data) {
+            const lang = data.params?.lang ?? 'fi';
+            Object.assign(this.settings, sortGameTranslations[lang] ?? {}, );
+            copyParamsValues(data.params, this.settings);
+        }
+        this.settingData = false; // use this to prevent extra events when setting data
+        this.movedWhileNotHidden = false;
         this.initData = (initData && initData.c !== undefined) ? initData : null;
         let s = this.settings;
         setNoSelect(gameElement);
@@ -101,7 +129,7 @@ class SortGame {
         this.createLabel('label2', 568, 264, s.assignsText);
         this.createButton('button-hide', 88, 211, 110, 50, s.hideText, this.buttonHideClick.bind(this));
         this.createButton('button-show', 88, 211, 110, 50, s.showText, this.buttonShowClick.bind(this));
-        this.createButton('button-hide', 130, 280, 65, 30, s.newGameText, this.handleDealButtonClick.bind(this));
+        this.createButton('button-hide', 135, 280, 60, 30, s.newGameText, this.handleDealButtonClick.bind(this));
         this.dirArrow = this.createArrow('dirArrow', 488, 211, 62, 50, '');
         this.swapButton = this.createButton('buttonSwap', 568, 211, 62, 50, s.swapText, this.buttonSwapClick.bind(this));
         this.createHiddenOptionsArea();
@@ -117,18 +145,26 @@ class SortGame {
             if (event.shiftKey) key = 's-' + key;
             if (event.altKey) key = 'a-' + key;
             if (key === ' ') return p(e) + this.buttonSwapClick(this);  // space = vaihda
-            if (key === 'a') return p(e) + this.movePtr(0, -1); // a = siirrä vasemmalle 1. ptr
-            if (key === 'd') return p(e) + this.movePtr(0, 1); // d = siirrä oikealle 1. ptr
-            if (key === 'q') return p(e) + this.movePtr(0, -60); // q = 1. ptr alkuun
-            if (key === 'z') return p(e) + this.movePtr(0, 60); // z = 1. ptr loppuun
-            if (key === 's') return p(e) + this.moveToTrash(0); // s = 1. ptr kohdata roskikseen
-            if (key === 'arrowleft') return p(e) + this.movePtr(1, -1); // nuoli vasemmalle = siirrä vasemmalle 2. ptr
-            if (key === 'arrowright') return p(e) + this.movePtr(1, 1); // nuoli oikealle = siirrä oikealle 2. ptr
-            if (key === 'home') return p(e) + this.movePtr(1, -60); // home = 2. ptr alkuun
-            if (key === 'end') return p(e) + this.movePtr(1, 60); // end = 2. ptr loppuun
-            if (key === 'arrowdown') return p(e) + this.moveToTrash(1); // nuoli alas = 2. ptr kohdata roskikseen
-            if (key === 'c-arrowleft') return p(e) + this.movePtr(0, -1) + this.movePtr(1, -1); // ctrl + vasen = siirrä vasemmalle molemmat ptr
-            if (key === 'c-arrowright') return p(e) + this.movePtr(0, 1) + this.movePtr(1, 1); // ctrl + oikea = siirrä oikealle molemmat ptr
+            if (key === 'a') return p(e) + this.movePtr(0, -1); // a = siirrä vasemmalle punaista
+            if (key === 'd') return p(e) + this.movePtr(0, 1); // d = siirrä oikealle punaista
+            if (key === 'q') return p(e) + this.movePtr(0, -60); // q = punainen  alkuun
+            if (key === 'z') return p(e) + this.movePtr(0, 60); // z = punainen loppuun
+            if (key === 's') return p(e) + this.moveToTrash(0); // s = punaisen kohdata roskikseen
+            if (key === 'r') return p(e) + this.moveToPtr(0, 1); // r = punainen osoitin mustan luo
+            if (key === 'y') return p(e) + this.moveToPtr(2, 1); // y = keltainen osoitin mustan luo
+            if (key === 'b') return p(e) + this.moveToPtr(3, 1); // b = sininen osoitin mustan luo
+            if (key === 'w') return p(e) + this.moveToPtr(0, 1); // w = punainen osoitin mustan luo
+            if (key === 'arrowup') return p(e) + this.moveToPtr(1, 0); // nuoli ylös = musta osoitin punaisen luo
+            if (key === 'arrowleft') return p(e) + this.movePtr(1, -1); // nuoli vasemmalle = siirrä vasemmalle mustaa
+            if (key === 'arrowright') return p(e) + this.movePtr(1, 1); // nuoli oikealle = siirrä oikealle mustaa
+            if (key === 'home') return p(e) + this.movePtr(1, -60); // home = musta alkuun
+            if (key === 'end') return p(e) + this.movePtr(1, 60); // end = musta loppuun
+            if (key === 'arrowdown') return p(e) + this.moveToTrash(1); // nuoli alas = mustan kohdalta roskikseen
+            if (key === 'c-arrowleft') return p(e) + this.movePtr(0, -1) + this.movePtr(1, -1); // ctrl + vasen = siirrä vasemmalle punainen ja musta
+            if (key === 'c-arrowright') return p(e) + this.movePtr(0, 1) + this.movePtr(1, 1); // ctrl + oikea = siirrä oikealle punainen ja musta
+            if (key === 'c-1') return p(e) + this.movePtrTo(0, 1) + this.movePtrTo(1, 2); // ctrl + 1 = punainen alkuun, musta punaisen oikealle puolen
+            if (key === 'c-9') return p(e) + this.movePtrTo(0, 1) + this.movePtrTo(1, -2); // ctrl + 9 = punainen alkuun, musta loppuun
+            if (key === 'c-s') return p(e) + this.buttonShowClick(); // ctrl + s = näytä (samalla save)
         });
     }
 
@@ -276,6 +312,7 @@ class SortGame {
     }
 
     deal(n) {
+        this.movedWhileNotHidden = false;
         this.buttonHideClick();
         this.setTablePositions();
         if (this.dealDeck.cards.length >= this.dealDeck.maxCards) {
@@ -304,6 +341,16 @@ class SortGame {
 
 
     show(visible) {
+        if (visible) {
+            document.querySelectorAll('.button-hide').forEach(element => {
+               element.style.display = 'block';
+            });
+            document.querySelector('.button-show').style.display = 'none';
+        } else {
+            document.querySelectorAll('.button-hide').forEach(element => {
+                element.style.display = 'none';
+            });
+        }
         for (let deck of this.table.decks) {
             deck.setVisible(visible);
         }
@@ -404,20 +451,14 @@ class SortGame {
 
 
     buttonHideClick() {
-        document.querySelectorAll('.button-hide').forEach(element => {
-           element.style.display = 'none';
-        });
         document.querySelector('.button-show').style.display = 'block';
         this.show(false);
     }
 
     buttonShowClick() {
-        document.querySelectorAll('.button-hide').forEach(element => {
-           element.style.display = 'block';
-        });
-        document.querySelector('.button-show').style.display = 'none';
         this.show(true);
         if (this.settings.task) saveData(this.getData());
+        return 0;
     }
 
     getPtrIndex(ptr) {
@@ -432,6 +473,8 @@ class SortGame {
         let i1 = this.getPtrIndex(this.ptrs[0]);
         let i2 = this.getPtrIndex(this.ptrs[1]);
         if (i1 === i2) return;
+        if (i1 === 0 || i2 === 0) return;
+        if (i1 >= decks.length || i2 >= decks.length) return;
         // this.varasto.speed = 100;
         // this.poyta.decks[i1].speed = 100;
         // this.poyta.decks[i2].speed = 100;
@@ -469,6 +512,22 @@ class SortGame {
         // if (card == null) return 0;
         // this.table.decks[i].removeCard(card);
         this.recycleBin.addCard(card);
+        return 0;
+    }
+
+    moveToPtr(ptrIndex, toIndex) {
+        const ptrto = this.ptrs[toIndex];
+        const deckto = ptrto.deck;
+        const ptrmove = this.ptrs[ptrIndex];
+        deckto.animateAddCard(ptrmove);
+        return 0;
+    }
+
+    movePtrTo(ptrIndex, deckIndex) {
+        if (deckIndex < 0) deckIndex = this.ptrtable.decks.length + deckIndex;
+        const deckto = this.ptrtable.decks[deckIndex];
+        const ptrmove = this.ptrs[ptrIndex];
+        deckto.animateAddCard(ptrmove);
         return 0;
     }
 
@@ -515,6 +574,8 @@ class SortGame {
         const color2 = card2 ? card2.color : "green";
         ptrDec1.setTextColor(color1);
         ptrDec2.setTextColor(color2);
+        if (this.storage.visible) this.movedWhileNotHidden = true;
+        if (!this.settingData) updateData(null);
     }
 
     createHiddenOptionsArea() {
@@ -524,7 +585,7 @@ class SortGame {
         hiddenArea.className = 'hidden-area';
         hiddenArea.style.display = 'none';
         hiddenArea.style.position = 'absolute';
-        hiddenArea.style.top = '320px';
+        hiddenArea.style.top = '245px';
         hiddenArea.style.left = '20px';
         hiddenArea.style.backgroundColor = 'white';
         hiddenArea.style.border = '1px solid black';
@@ -619,6 +680,7 @@ class SortGame {
             this.show(true);
             return;
         }
+        this.settingData = true;
         const cntrs = data.c.cntrs;
         const ptrs = data.c.ptrs;
         const cards = data.c.cards;
@@ -645,15 +707,17 @@ class SortGame {
             }
         }
 
-        if (cntrs) {
-            this.moveCounter.setValue(cntrs[0]-ptrn);
-            this.assignCounter.setValue(cntrs[1]-crdn);
-        }
-
         this.createFirstCard(data.c.c1);
 
         this.checkValues();
         this.show(true);
+        setTimeout(() => {
+            this.settingData = false;
+            if (cntrs) {
+                this.moveCounter.setValue(cntrs[0]);
+                this.assignCounter.setValue(cntrs[1]);
+            }
+        }, 100);
     }
 
     getData() {
@@ -673,6 +737,7 @@ class SortGame {
         };
         const firstCard = this.firstDeck ? this.firstDeck.peek() : null;
         if (firstCard) data.c.c1 = firstCard.id;
+        if (this.movedWhileNotHidden) data.c.moved = true;
 
         return data;
     }

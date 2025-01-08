@@ -2,17 +2,30 @@ function onInit() {
     new Napoleon(document.getElementById('game'), window.jsframedata);
 }
 
+napoleonTranslations = {
+    en: {
+        helpDeckText: 'Extra',     // text for help deck
+        handDeckText: 'Hand deck', // text for hand deck
+        sixDeckText: '6-deck',     // text for for upper 6-deck
+        newGameText: 'New game',   // text for new game link
+    }
+}
 
 class Napoleon {
 
     constructor(gameElement, data) {
         this.settings = {
+            lang: "fi",                // laguage, fi, en
             helpDeckText: 'Apu',       // text for help deck
             handDeckText: 'Käsipakka', // text for hand deck
             sixDeckText: '6-pakka',    // text for for upper 6-deck
             newGameText: 'Uusi peli',  // text for new game link
         }
-        if (data) copyParamsValues(data.params, this.settings);
+        if (data) {
+            const lang = data.params?.lang ?? 'fi';
+            Object.assign(this.settings, napoleonTranslations[lang] ?? {}, );
+            copyParamsValues(data.params, this.settings);
+        }
         this.gameElement = gameElement;
         this.createLayout();
     }

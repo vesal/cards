@@ -24,15 +24,25 @@ function updateData(data) {
     window.port2.postMessage({ msg: "update", data: {  ...data } });
 }
 
+paliTranslations = {
+    en: {
+        labelText: "Give a word:", // label text
+    }
+}
 
 class Pali {
     constructor(container, data) {
         this.settings = {
-            inputChars: 10, // input alueen leveys
-            minChars: 0, // sanassa tarvittavien merkkien minimimäärä
+            lang: "fi",       // laguage, fi, en
+            inputChars: 10,   // input alueen leveys
+            minChars: 0,      // sanassa tarvittavien merkkien minimimäärä
             labelText: "Anna sana:", // labelin teksti
         }
-        if (data) Object.assign(this.settings, data.params);
+        if (data) {
+            const lang = data.params?.lang ?? 'fi';
+            Object.assign(this.settings, paliTranslations[lang] ?? {}, );
+            Object.assign(this.settings, data.params);
+        }
         this.container = container;
         this.createContent();
     }
