@@ -78,9 +78,14 @@ class SortGame {
             ptrLessText: '<',            // text for less under the pointer
             ptrGreaterText: '>',         // text for greater under the pointer
             ptrEqualText: '=',           // text for equal under the pointer
-            lessText: '&#8678;',         // text for less than arrow
-            greaterText: '&#8680;',      // text for greater than arrow
+            lessText: '<',               // text for less than arrow
+            greaterText: '>',            // text for greater than arrow
             equalText: '==',             // text for equal arrow
+            movableDirArrow: true,       // if true, the sign moves between the pointers
+            dirArrowY: -10,              // y position for the direction arrow (affected when movableDirArrow)
+            dirArrowX: -10,              // x position for the direction arrow (affected when movableDirArrow)
+            dealToStorage: false,        // if true, deal to storage deck
+            startOpen: false,            // if true, start with open cards
             firstCard: null,       // card name for the left most card, like s04, rnd = random card
             firstCardBackIndex: 0, // back image index for the first card
             sortFirst: 0, // how many first cards to sort in deal deck before dealing
@@ -91,6 +96,7 @@ class SortGame {
                          // if starts with -, swap count indecies from the end
                          // so top of deal deck. 0 is the topmost card
             task: false, // if false, the game is not a task, so no need to save the data
+
         }
         if (data) {
             const lang = data.params?.lang ?? 'fi';
@@ -127,9 +133,9 @@ class SortGame {
         this.assignCounter = this.createCounter('counter-assign', 568, 280);
         this.createLabel('label1', 488, 264, s.pointingsText);
         this.createLabel('label2', 568, 264, s.assignsText);
-        this.createButton('button-hide', 88, 211, 110, 50, s.hideText, this.buttonHideClick.bind(this));
-        this.createButton('button-show', 88, 211, 110, 50, s.showText, this.buttonShowClick.bind(this));
-        this.createButton('button-hide', 135, 280, 60, 30, s.newGameText, this.handleDealButtonClick.bind(this));
+        this.buttonHide = this.createButton('button-hide', 88, 211, 110, 50, s.hideText, this.buttonHideClick.bind(this));
+        this.buttonShow = this.createButton('button-show', 88, 211, 110, 50, s.showText, this.buttonShowClick.bind(this));
+        this.buttonDeal = this.createButton('button-hide', 135, 280, 60, 30, s.newGameText, this.handleDealButtonClick.bind(this));
         this.dirArrow = this.createArrow('dirArrow', 488, 211, 62, 50, '');
         this.swapButton = this.createButton('buttonSwap', 568, 211, 62, 50, s.swapText, this.buttonSwapClick.bind(this));
         this.createHiddenOptionsArea();
@@ -244,12 +250,19 @@ class SortGame {
             this.gameElement.style.width = `${s.scale * x + 10}px`;
         }
 
+        if (s.startOpen) this.show(true, true);
+
         if (!animate) return;
 
         setTimeout(() => {
             for (let i = 1; i < this.table.decks.length; i++) {
                 const deck = this.table.decks[i];
-                deck.animateAddCard(this.dealDeck.pop());
+                if (!s.dealToStorage) deck.animateAddCard(this.dealDeck.pop());
+                else {
+                    setTimeout(() => {
+                        this.storage.animateAddCard(this.dealDeck.pop());
+                    }, i*100);
+                }
             }
         }, 100);
 
@@ -270,15 +283,9 @@ class SortGame {
     }
 
     createFirstCard(cardName) {
-        if (cardName == null || cardName.length < 2) return;
-        if (cardName === "rnd") {
-            cardName = cardSettings.suits[Math.floor(Math.random() * 4)] + String(Math.floor(Math.random() * 13) + 1).padStart(2, '0');
-        }
-        const suite = cardName[0].toLowerCase();
-        if (!(cardSettings.suits.includes(suite))) return;
-        const value = parseInt(cardName.substring(1));
-        if (isNaN(value) || value < 1 || value > 13) return;
-        const firstCard = new PlayingCard(suite, value, true);
+        this.firstDeck.removeAllCards();
+        const firstCard = this.dealDeck.createNewCard(cardName)
+        if (!firstCard) return;
         this.firstDeck.addCard(firstCard);
         firstCard.setBackGroundImageByIndex(this.settings.firstCardBackIndex);
         firstCard.removeAllEventListeners();
@@ -340,8 +347,8 @@ class SortGame {
     }
 
 
-    show(visible) {
-        if (visible) {
+    show(visible, forceButtonShow = false) {
+        if (visible && !forceButtonShow) {
             document.querySelectorAll('.button-hide').forEach(element => {
                element.style.display = 'block';
             });
@@ -555,8 +562,9 @@ class SortGame {
         for (let ptrDeck of this.ptrtable.decks) {
             ptrDeck.setCenterText(" ");
             ptrDeck.setTextSize("40px");
-            ptrDeck.setTextTop("80%")
-            ptrDeck.setTextLeft("30%")
+            ptrDeck.setTextTop("80%");
+            ptrDeck.setTextLeft("30%");
+            ptrDeck.element.style.zIndex = '1';
         }
         let ptrDec1 = this.ptrtable.decks[i1];
         let ptrDec2 = this.ptrtable.decks[i2];
@@ -574,6 +582,21 @@ class SortGame {
         const color2 = card2 ? card2.color : "green";
         ptrDec1.setTextColor(color1);
         ptrDec2.setTextColor(color2);
+        if (s.movableDirArrow) {
+            const x1 = ptrDec1.element.getBoundingClientRect().left;
+            const x2 = ptrDec2.element.getBoundingClientRect().left;
+            const y1 = 0; // ptrDec1.element.getBoundingClientRect().top;
+            const x = (x1 + x2) / 2 + s.dirArrowX;
+            const y = y1 + s.dirArrowY;
+            this.dirArrow.style.color = 'black';
+            this.gameElement.appendChild(this.dirArrow);
+            this.dirArrow.style.top = `${y/s.scale}px`;
+            this.dirArrow.style.left = `${x/s.scale}px`;
+            this.ptrtable.element.appendChild(this.dirArrow);
+            this.dirArrow.style.zIndex = '0';
+            if (x1 == x2) this.dirArrow.style.display = 'none';
+            else this.dirArrow.style.display = 'block';
+        }
         if (this.storage.visible) this.movedWhileNotHidden = true;
         if (!this.settingData) updateData(null);
     }
@@ -689,7 +712,6 @@ class SortGame {
         let crdn = 0;
         if (ptrs) {
             this.createPointers(ptrs.length);
-            ptrn = ptrs.length;
             for (let i = 0; i < ptrs.length; i++) {
                 let ptr = this.ptrs[i];
                 let index = ptrs[i];
@@ -700,12 +722,14 @@ class SortGame {
         }
 
         if (cards) {
-            crdn = cards.length;
             for (let i = 0; i < cards.length; i++) {
                 let cardId = cards[i];
                 if (cardId) this.table.decks[i + 1].addCard(this.dealDeck.getById(cardId));
             }
         }
+
+        if (data.c.storage)  this.storage.addCardsFromArray(data.c.storage, this.dealDeck);
+        if (data.c.trash)  this.recycleBin.addCardsFromArray(data.c.trash, this.dealDeck);
 
         this.createFirstCard(data.c.c1);
 
@@ -720,6 +744,14 @@ class SortGame {
         }, 100);
     }
 
+
+    getCards(deck) {
+        const cards = [];
+        for (let card of deck.cards) cards.push(card ? card.id : "");
+        return cards;
+    }
+
+
     getData() {
         const ps = [];
         for (let ptr of this.ptrs) ps.push(this.getPtrIndex(ptr));
@@ -733,10 +765,18 @@ class SortGame {
                 { cntrs: [this.moveCounter.value,this.assignCounter.value],
                   ptrs: ps,
                   cards: cs,
+                  storage: this.getCards(this.storage),
                 },
         };
         const firstCard = this.firstDeck ? this.firstDeck.peek() : null;
         if (firstCard) data.c.c1 = firstCard.id;
+
+        const ss = this.storage.getCardsArray()
+        if (ss.length > 0) data.c.storage = ss;
+
+        const rs = this.recycleBin.getCardsArray()
+        if (rs.length > 0) data.c.trash = rs;
+
         if (this.movedWhileNotHidden) data.c.moved = true;
 
         return data;

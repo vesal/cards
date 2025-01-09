@@ -10,26 +10,28 @@
         document.write(`<script src="${scriptPath}cards.js?v={ver}"><\/script>`);
         document.write(`<script src="${scriptPath}sortgame.js?v={ver}"><\/script>`);
         window.jsframedata = { params: {
-            scale: 1.0,
+            //scale: 1.0,
             imagePath: '/common/images/cards',
-            n: 5,
+            //n: 5,
             // dx: 73,
-            // scale: 0.6,
-            // n: 52,
-            // dx: 33,
+            scale: 1,
+            n: 32,
+            dx: 40,
             numberOfPtrs: 4,
             ptrLessText: '-',
             ptrGreaterText: '-',
             ptrEqualText: '-',
-            lessText: '<',
-            greaterText: '>',
-            equalText: '=',
+            // lessText: '<',
+            // greaterText: '>',
+            // equalText: '=',
             // firstCard: "rnd",
-            // sortFirst: -60,
+            // sortFirst: -52,
             firstCardBackIndex: 5,
             // compareSuits: true,
-            pickCards: "s02 c06 d01 h12",
+            // pickCards: "s02 c06 d01 h12",
             // swaps: "3-7 9-12 34-2"
+            // dealToStorage: true,
+            startOpen: true,
             task: true,
             } };
           data1 = {
@@ -48,6 +50,14 @@
       "s12",
       "s02",
       "c06",
+      "d01",
+    ],
+    "storage": [
+      "s11",
+      "s03",
+    ],
+    "trash": [
+      "d11",
       "d01",
     ],
     "c1": "c03",
@@ -122,7 +132,7 @@ data2 = {
     }
 };
 
-        window.initData = data1;
+        // window.initData = data1;
         document.addEventListener('DOMContentLoaded', () => {
             onInit();
             // setData(data);

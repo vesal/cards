@@ -7,7 +7,7 @@ const cardSettings = {
     // see https://tekeye.uk/playing_cards/svg-playing-cards?
 
     // Names of pointer images
-    ptrImages: ['lred', 'lblack', 'lyellow', 'blue', 'orange', 'green', 'black', 'red', 'lyellow', 'bblack', 'bred'],
+    ptrImages: ['dlred', 'lblack', 'lyellow', 'blue', 'orange', 'green', 'black', 'red', 'lyellow', 'bblack', 'bred'],
 
     // Names for background images
     bgImages: ["back1", "back2", "back3", "back4", "back5", "back6", "back7", "back8", "back9", "back10", "back11", "back12", "back13"],
@@ -762,6 +762,28 @@ class Deck {
         this.updateDeckDisplay();
     }
 
+    getCardsArray() {
+        return this.cards.map(c => c? c.id: "");
+    }
+
+    createNewCard(cardId) {
+        if (cardId == null || cardId.length == 0) return null;
+        return new Card(cardId, cardId, cardId, cardId, false);
+    }
+
+    addCardsFromArray(cardsArray, dealDeck, emptyFirst = true, createNew = false, forceNew = false) {
+        if (emptyFirst) this.removeAllCards();
+        for (let cardId of cardsArray) {
+            if (!cardId) continue;
+            let card = null;
+            if (!forceNew) card = dealDeck.getById(cardId);
+            if (!card) {
+                if (createNew || forceNew)
+                    card = dealDeck.createNewCard(cardId);
+            }
+            if (card) this.addCard(card);
+        }
+    }
 }
 
 
@@ -775,6 +797,7 @@ class PlayingCardDeck extends Deck {
         return super.isAllowedToDrop(card);
     }
 }
+
 
 class DealDeck extends PlayingCardDeck {
     constructor(elementId) {
@@ -794,6 +817,18 @@ class DealDeck extends PlayingCardDeck {
                 this.maxCards++;
             }
         }
+    }
+
+    createNewCard(cardId) {
+        if (cardId == null || cardId.length < 2) return null;
+        if (cardId === "rnd") {
+            cardId = cardSettings.suits[Math.floor(Math.random() * 4)] + String(Math.floor(Math.random() * 13) + 1).padStart(2, '0');
+        }
+        const suite = cardId[0].toLowerCase();
+        if (!(cardSettings.suits.includes(suite))) return null;
+        const value = parseInt(cardId.substring(1));
+        if (isNaN(value) || value < 1 || value > 13) return null;
+        return new PlayingCard(suite, value, false);
     }
 }
 
